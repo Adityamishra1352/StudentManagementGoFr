@@ -29,6 +29,11 @@ func createDatabase() {
 		fmt.Println("Error creating database")
 	}
 }
+func addStudent(student Student) error {
+	_, err := db.Exec("INSERT INTO students(name,age,enrollment)VALUES(?,?,?)", student.Name, student.Age, student.Enrollment)
+	return err
+}
+
 func main() {
 	app := gofr.New()
 	createDatabase()
@@ -38,7 +43,7 @@ func main() {
 	})
 	app.POST("/add", func(ctx *gofr.Context) (interface{}, error) {
 		var students Student
-		err := AddStudent(student)
+		err := addStudent(students)
 		if err != nil {
 			return nil, err
 		}
