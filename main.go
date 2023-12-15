@@ -2,7 +2,9 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"strconv"
 
 	_ "github.com/mattn/go-sqlite3"
 	"gofr.dev/pkg/gofr"
@@ -33,7 +35,31 @@ func addStudent(student Student) error {
 	_, err := db.Exec("INSERT INTO students(name,age,enrollment)VALUES(?,?,?)", student.Name, student.Age, student.Enrollment)
 	return err
 }
+func viewStudents() ([]Student, error) {
+	rows, err := db.Query("SELECT * FROM students")
+	if err != nil {
+		fmt.Println("Error while executing query:", err)
+		return nil, err
+	}
+	defer rows.Close()
 
+	var students []Student
+	for rows.Next() {
+		var a Student
+		err := rows.Scan(&a.ID, &a.Name, &a.Age, &a.Enrollment)
+		if err != nil {
+			fmt.Println("Error while scanning row:", err)
+			return nil, err
+		}
+		students = append(students, a)
+	}
+
+	return students, nil
+}
+func deleteStudent(id int) error {
+	_, err := db.Exec("DELETE FROM students WHERE id=?", id)
+	return err
+}
 func main() {
 	app := gofr.New()
 	createDatabase()
@@ -43,11 +69,46 @@ func main() {
 	})
 	app.POST("/add", func(ctx *gofr.Context) (interface{}, error) {
 		var students Student
+		if err := json.NewDecoder(ctx.Request().Body).Decode(&students); err != nil {
+			return nil, err
+		}
 		err := addStudent(students)
 		if err != nil {
 			return nil, err
 		}
 		return students, nil
 	})
+	app.GET("/view", func(ctx *gofr.Context) (interface{}, error) {
+		students, err := viewStudents()
+		if err != nil {
+			fmt.Println("COuldnt view")
+		}
+		return students, nil
+	})
+	app.DELETE("/delete/:id", func(ctx *gofr.Context) (interface{}, error) {
+		idParam := ctx.Param("id")
+		if idParam == "" {
+			return nil, fmt.Errorf("ID not provided")
+		}
+
+		id, err := strconv.Atoi(idParam)
+		if err != nil {
+			return nil, fmt.Errorf("Invalid ID format")
+		}
+
+		deletedStudent, err := viewStudents()
+		if err != nil {
+			return nil, err
+		}
+
+		err = deleteStudent(id)
+		if err != nil {
+			fmt.Println("Couldn't delete student:", err)
+			return nil, err
+		}
+
+		return deletedStudent, nil
+	})
+
 	app.Start()
 }
