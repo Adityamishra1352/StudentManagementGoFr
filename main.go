@@ -60,6 +60,10 @@ func deleteStudent(id int) error {
 	_, err := db.Exec("DELETE FROM students WHERE id=?", id)
 	return err
 }
+func updateStudent(id int, student Student) error {
+	_, err := db.Exec("UPDATE students SET name=?, age=?, enrollment=? WHERE id=?", student.Name, student.Age, student.Enrollment, id)
+	return err
+}
 func main() {
 	app := gofr.New()
 	createDatabase()
@@ -109,6 +113,29 @@ func main() {
 
 		return deletedStudent, nil
 	})
+	app.PUT("/update/:id", func(ctx *gofr.Context) (interface{}, error) {
+		idParam := ctx.Param("id")
+		if idParam == "" {
+			return nil, fmt.Errorf("idnotprovided")
+		}
 
+		id, err := strconv.Atoi(idParam)
+		if err != nil {
+			return nil, fmt.Errorf("invalidid")
+		}
+
+		var updatedStudent Student
+		if err := json.NewDecoder(ctx.Request().Body).Decode(&updatedStudent); err != nil {
+			return nil, err
+		}
+
+		err = updateStudent(id, updatedStudent)
+		if err != nil {
+			fmt.Println("Couldn't update student:", err)
+			return nil, err
+		}
+
+		return updatedStudent, nil
+	})
 	app.Start()
 }
