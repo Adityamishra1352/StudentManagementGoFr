@@ -85,7 +85,7 @@ func main() {
 		}
 		return students, nil
 	})
-	app.DELETE("/delete/:id", func(ctx *gofr.Context) (interface{}, error) {
+	app.GET("/d/:id", func(ctx *gofr.Context) (interface{}, error) {
 		idParam := ctx.Param("id")
 		if idParam == "" {
 			return nil, fmt.Errorf("ID not provided")
@@ -93,7 +93,7 @@ func main() {
 
 		id, err := strconv.Atoi(idParam)
 		if err != nil {
-			return nil, fmt.Errorf("Invalid ID format")
+			return nil, fmt.Errorf("invalidformat")
 		}
 
 		deletedStudent, err := viewStudents()
